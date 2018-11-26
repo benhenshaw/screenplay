@@ -12,5 +12,5 @@ func main() {
     http.Handle("/", fs)
     fmt.Printf("Launching server on %s, serving files from '%s'.\n", address, static_dir)
     e := http.ListenAndServe(address, nil)
-    fmt.Printf("Server exited (%s)", e);
+    fmt.Printf("Server exited (%s)\n", e);
 }
