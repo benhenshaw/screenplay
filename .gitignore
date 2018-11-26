@@ -1,0 +1,7 @@
+*
+!web/
+!*.html
+!*.css
+!*.js
+!*.go
+!.gitignore

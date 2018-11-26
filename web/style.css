@@ -1,0 +1,115 @@
+body
+{
+    font-size: 12pt;
+    font-family: Courier, monospace;
+}
+
+#wrapper
+{
+    max-width: 45em;
+    margin: 1em auto 1em auto;
+}
+
+#script
+{
+
+}
+
+.description
+{
+
+}
+
+.dialogue
+{
+    max-width: 20em;
+    margin: auto;
+}
+
+.name
+{
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.dialogue > .name
+{
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.dialogue > p
+{
+    margin-top: 0;
+}
+
+.location
+{
+    text-transform: uppercase;
+}
+
+.scene_number
+{
+    margin-right: 5%;
+    display: inline-block;
+}
+
+input
+{
+    word-wrap: break-word;
+    display: inline;
+    width: 70%;
+    padding: 0 0.2em 0 0.2em;
+    font-family: inherit;
+    font-size: inherit;
+    border: none;
+    border-bottom: 1px solid #000;
+    height: 1.25em;
+}
+
+#action_select:hover
+{
+    border-bottom: 1px solid #000;
+}
+
+#name_display
+{
+    display: inline-block;
+    text-align: center;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+#input_type_display
+{
+    text-align: center;
+    width: 3em;
+}
+
+hr
+{
+    border: none;
+    border-top: 1px solid #bbb;
+}
+
+h1
+{
+    text-align: center;
+    font-size: 1em;
+    text-transform: uppercase;
+}
+
+#input_area
+{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: center;
+    align-content: center;
+}
+
+#instructions
+{
+    font-style: italic;
+}
