@@ -11,13 +11,27 @@ var entry_input = document.getElementById("entry");
 var input_type_display = document.getElementById("input_type_display");
 var scene_counter = 1;
 var names = [ ];
-var local_user_name = "Ben";
-var local_input_type = "say"; // "say", "do";
-
+// TODO: Build in-app name entry system.
+var local_user_name = null;
+while (local_user_name === null)
+{
+    local_user_name = prompt("Please enter your name.", "Mary");
+}
+var local_input_type = "say"; // "say", "do"
 name_display.innerHTML = local_user_name;
 name_display.innerHTML = local_user_name;
-
 input_type_display.innerHTML = `(${local_input_type})`;
+
+const socket = new WebSocket(`ws://${window.location.host}/ws`);
+
+socket.addEventListener('open', function (event) {
+    console.log("Socket connected!");
+});
+
+socket.addEventListener('message', function (event) {
+    console.log("message: ", event.data);
+    parse_message(event.data);
+});
 
 function format_and_add_name(name)
 {
@@ -63,7 +77,7 @@ function action(name, text)
     {
         var old_text = script.lastElementChild.innerHTML;
         console.log(old_text);
-        script.lastElementChild.innerHTML = old_text.concat(` Then ${text}`);
+        script.lastElementChild.innerHTML = old_text.concat(` <span class="name">${n}</span> ${text}`);
     }
     else
     {
@@ -86,23 +100,25 @@ function description(text)
     script.insertAdjacentHTML("beforeend", s);
 }
 
-function handle_input(text)
+function build_message_from_input(text)
 {
-    if (local_input_type === "say")
-    {
-        dialogue(local_user_name, text);
-    }
-    else
-    {
-        action(local_user_name, text);
-    }
+    var message = "";
+    message += local_input_type;
+    message += ","
+    message += local_user_name;
+    message += ","
+    message += text;
+    return message;
 }
 
 entry_input.addEventListener("keypress", (event) =>
 {
     if (event.key === "Enter")
     {
-        handle_input(entry_input.value);
+        // handle_input(entry_input.value);
+        m = build_message_from_input(entry_input.value);
+        socket.send(m);
+        // parse_message(m);
         entry_input.value = "";
         window.scrollTo(0,document.body.scrollHeight);
     }
@@ -125,6 +141,18 @@ entry_input.addEventListener("keypress", (event) =>
         input_type_display.innerHTML = `(${local_input_type})`;
     }
 });
+
+function parse_message(message)
+{
+    var args = message.split(",");
+    console.log("message args:", args);
+    var type = args[0];
+    if (type === "title")       title(args[1]);
+    if (type === "say")         dialogue(args[1], args[2]);
+    if (type === "do")          action(args[1], args[2]);
+    if (type === "scene")       scene(args[1], args[2] === "true");
+    if (type === "description") description(args[1]);
+}
 
 
 // DEMO
