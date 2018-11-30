@@ -22,7 +22,7 @@ name_display.innerHTML = local_user_name;
 name_display.innerHTML = local_user_name;
 input_type_display.innerHTML = `(${local_input_type})`;
 
-const socket = new WebSocket(`ws://${window.location.host}/ws`);
+const socket = new WebSocket(`wss://${window.location.host}/ws`);
 
 socket.addEventListener('open', function (event) {
     console.log("Socket connected!");

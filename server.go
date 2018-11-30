@@ -1,12 +1,17 @@
 package main
 
 import (
+    "flag"
     "fmt"
-    "net/http"
     "github.com/gorilla/websocket"
+    "net/http"
 )
 
 func main() {
+    cert := flag.String("cert", "", "TLS certificate.")
+    key  := flag.String("key",  "", "TLS private key.")
+    flag.Parse();
+
     var upgrader = websocket.Upgrader {
         ReadBufferSize:  1024,
         WriteBufferSize: 1024,
@@ -14,8 +19,8 @@ func main() {
 
     var connections []*websocket.Conn
 
-    http.HandleFunc("/ws", func(writer http.ResponseWriter, reader *http.Request) {
-        new_connection, e := upgrader.Upgrade(writer, reader, nil)
+    http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
+        new_connection, e := upgrader.Upgrade(writer, request, nil)
         if e != nil {
             fmt.Printf("ERROR: %s\n", e)
             return
@@ -44,11 +49,22 @@ func main() {
         }
     })
 
-    address := ":80"
+    address := ":443"
     static_dir := "web/"
     fs := http.FileServer(http.Dir(static_dir))
     http.Handle("/", fs)
     fmt.Printf("Launching server on %s, serving files from '%s'.\n", address, static_dir)
-    e := http.ListenAndServe(address, nil)
-    fmt.Printf("ERROR: %s\n", e)
+    http.ListenAndServeTLS(address, *cert, *key, nil)
+
+    // Forward http requests to https.
+
+    redirector := http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request) {
+        http.Redirect(
+            writer,
+            request,
+            "https://" + request.Host + request.RequestURI,
+            http.StatusMovedPermanently)
+    });
+    http.ListenAndServe(":80", redirector);
+
 }
