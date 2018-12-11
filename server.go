@@ -23,7 +23,7 @@ func main() {
     http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
         new_connection, e := upgrader.Upgrade(writer, request, nil)
         if e != nil {
-            fmt.Printf("ERROR: %s\n", e)
+            fmt.Printf("ERROR (Upgrade): %s\n", e)
             return
         }
 
@@ -44,7 +44,7 @@ func main() {
             for _, c := range connections {
                 e = c.WriteMessage(message_type, message)
                 if e != nil {
-                    fmt.Printf("ERROR (WriteMessage): %s", e)
+                    fmt.Printf("ERROR (WriteMessage): %s\n", e)
                 }
             }
         }
