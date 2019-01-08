@@ -13,7 +13,7 @@ func main() {
     static_dir := flag.String("path", "web/", "Static file directory.")
     flag.Parse()
 
-    var upgrader = websocket.Upgrader{
+    var upgrader = websocket.Upgrader {
         ReadBufferSize:  1024,
         WriteBufferSize: 1024,
     }

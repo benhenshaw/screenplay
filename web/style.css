@@ -1,115 +1,40 @@
-body
+body { font-size: 12pt; font-family: Courier, monospace; min-width: 300px; }
+#wrapper { max-width: 45em; margin: 1em auto 1em auto; }
+#menu
 {
-    font-size: 12pt;
-    font-family: Courier, monospace;
+    max-width: 45em; margin: 1em auto 1em auto;
+    padding: 1em;
+    border: 1px solid #000;
 }
-
-#wrapper
-{
-    max-width: 45em;
-    margin: 1em auto 1em auto;
-}
-
-#script
-{
-
-}
-
-.description
-{
-
-}
-
-.dialogue
-{
-    max-width: 20em;
-    margin: auto;
-}
-
-.name
-{
-    text-transform: uppercase;
-    font-weight: 800;
-}
-
-.dialogue > .name
-{
-    text-align: center;
-    margin-bottom: 0;
-}
-
-.dialogue > p
-{
-    margin-top: 0;
-}
-
-.location
-{
-    text-transform: uppercase;
-}
-
-.scene_number
-{
-    margin-right: 5%;
-    display: inline-block;
-}
-
+#script {  }
+.description {  }
+.dialogue { max-width: 20em; margin: auto; }
+.name { text-transform: uppercase; font-weight: 800; }
+.dialogue > .name { text-align: center; margin-bottom: 0; }
+.dialogue > p { margin-top: 0; }
+.location { text-transform: uppercase; }
+.scene_number { margin-right: 5%; display: inline-block; }
+hr { border: none; border-top: 1px solid #bbb; width: 100%; margin: 0.5em 0; }
+h1 { text-align: center; font-size: 1em; text-transform: uppercase; }
 input
 {
-    word-wrap: break-word;
-    display: inline;
-    width: 70%;
-    padding: 0 0.2em 0 0.2em;
-    font-family: inherit;
-    font-size: inherit;
-    border: none;
-    border-bottom: 1px solid #000;
-    height: 1.25em;
+    display: block; width: 95%; height: 1.25em;
+    margin: 0.5em auto; padding: 0 0.2em 0 0.2em; border: 1px solid #000;
+    font-family: inherit; font-size: inherit;
 }
-
-#action_select:hover
+button
 {
-    border-bottom: 1px solid #000;
+    cursor: pointer;
+    background-color: #fff; min-width: 3em; min-height: 1.25em;
+    margin: 0 0.5em; padding: 0.2em 0.5em; border: 1px solid #000;
+    font-family: inherit; font-size: inherit;
 }
-
-#name_display
+button:hover { background-color: #eee; box-shadow: 0.1em 0.1em #000; }
+button:active { background-color: #eee; box-shadow: 0 0 #000; }
+button:disabled { background-color: #000; color: #fff; box-shadow: 0 0 #000; }
+.flex
 {
-    display: inline-block;
-    text-align: center;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-#input_type_display
-{
-    text-align: center;
-    width: 3em;
-}
-
-hr
-{
-    border: none;
-    border-top: 1px solid #bbb;
-}
-
-h1
-{
-    text-align: center;
-    font-size: 1em;
-    text-transform: uppercase;
-}
-
-#input_area
-{
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: space-around;
-    align-items: center;
-    align-content: center;
-}
-
-#instructions
-{
-    font-style: italic;
+    width: 100%; margin: auto;
+    display: flex; flex-direction: row; flex-wrap: nowrap;
+    justify-content: center;
 }

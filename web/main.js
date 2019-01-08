@@ -3,161 +3,274 @@
     main.js
 */
 
-var script = document.getElementById("script");
-var name_display = document.getElementById("name_display");
-var quote_1 = document.getElementById("quote_1");
-var quote_2 = document.getElementById("quote_2");
-var entry_input = document.getElementById("entry");
-var input_type_display = document.getElementById("input_type_display");
-var scene_counter = 1;
-var names = [ ];
-// TODO: Build in-app name entry system.
-var local_user_name = null;
-while (local_user_name === null)
+let entry_input = null;
+let socket = null;
+let character_name = "Jane";
+let character_action = "dialogue";
+
+function main()
 {
-    local_user_name = prompt("Please enter your name.", "Mary");
-}
-var local_input_type = "say"; // "say", "do"
-name_display.innerHTML = local_user_name;
-name_display.innerHTML = local_user_name;
-input_type_display.innerHTML = `(${local_input_type})`;
-
-const socket = new WebSocket(`wss://${window.location.host}/ws`);
-
-socket.addEventListener('open', function (event) {
-    console.log("Socket connected!");
-});
-
-socket.addEventListener('message', function (event) {
-    console.log("message: ", event.data);
-    parse_message(event.data);
-});
-
-function format_and_add_name(name)
-{
-    var n = name.trim().toUpperCase();
-    if (!names.includes(n)) names.push(n);
-    return n;
+    init_socket();
+    menu_mode();
 }
 
-function title(text)
+function scroll_to_bottom()
 {
-    if (script.lastElementChild && script.lastElementChild.id === "script_title")
+    let scroller = (document.scrollingElement || document.body);
+    scroller.scrollTop = scroller.scrollHeight;
+}
+
+function init_socket()
+{
+    if (location.protocol == 'https:')
     {
-         script.lastElementChild.innerHTML = `<h1 id="script_title">${text}</h1>`;
+        socket = new WebSocket(`wss://${window.location.host}/ws`);
     }
     else
     {
-        script.insertAdjacentHTML("afterbegin", `<h1 id="script_title">${text}</h1>`);
+        socket = new WebSocket(`ws://${window.location.host}/ws`);
     }
+
+    socket.onopen = (event) => console.log("Socket connected!");
 }
 
-function dialogue(name, text)
+function menu_mode()
 {
-    var n = format_and_add_name(name);
-    if (script.lastElementChild &&
-        script.lastElementChild.className === "dialogue" &&
-        script.lastElementChild.firstElementChild.innerHTML === n)
-    {
-        script.lastElementChild.insertAdjacentHTML("beforeend", `<p>${text}</p>`);
-    }
-    else
-    {
-        var s = `<div class="dialogue"><p class="name">${n}</p><p>${text}</p></div>`;
-        script.insertAdjacentHTML("beforeend", s);
-    }
+    document.body.innerHTML = "";
+
+    menu = document.createElement("div");
+    menu.setAttribute("id", "menu");
+
+    menu.innerHTML =
+    `
+        <h1>Welcome to Screen Play</h1>
+        <hr>
+        <ol>
+            <li>
+                You will be given a character profile.<br>It contains the following:
+                <ul>
+                    <li>Name</li>
+                    <li>Description</li>
+                    <li>Goal</li>
+                </ul>
+            </li>
+            <li>You will enter a room with other players.</li>
+            <li>Fulfil your goal.</li>
+        </ol>
+
+        <div class="flex">
+            <button id="play_button">Play</button>
+            <button id="spectate_button">Spectate</button>
+        </div>
+    `;
+
+    document.body.appendChild(menu);
+
+    let play_button = document.getElementById("play_button");
+    let spectate_button = document.getElementById("spectate_button");
+
+    play_button.onclick = () => script_mode(false);
+    spectate_button.onclick = () => script_mode(true);
 }
 
-function action(name, text)
+function script_mode(spectating)
 {
-    var n = format_and_add_name(name);
-    if (script.lastElementChild &&
-        script.lastElementChild.className === "action" &&
-        script.lastElementChild.firstElementChild.innerHTML === n)
+    //
+    // Server communication.
+    //
+
+    socket.onmessage = (event) =>
     {
-        var old_text = script.lastElementChild.innerHTML;
-        console.log(old_text);
-        script.lastElementChild.innerHTML = old_text.concat(` <span class="name">${n}</span> ${text}`);
+        console.log("Got: ", event.data);
+        parse_message(event.data);
+    };
+
+    //
+    // Document generation.
+    //
+
+    let wrapper       = null;
+    let script        = null;
+    let scene_counter = 1;
+
+    document.body.innerHTML = "";
+
+    wrapper = document.createElement("div");
+    wrapper.setAttribute("id", "wrapper");
+
+    script = document.createElement("div");
+    script.setAttribute("id", "script");
+
+    let button_box;
+    if (!spectating)
+    {
+        entry_input = document.createElement("input");
+        entry_input.setAttribute("id", "entry");
+        entry_input.setAttribute("type", "text");
+
+        button_box = document.createElement("div");
+        button_box.setAttribute("class", "flex");
+
+        let say_button = document.createElement("button");
+        say_button.innerHTML = "Say";
+        say_button.setAttribute("disabled", "true");
+
+        let take_button = document.createElement("button");
+        take_button.innerHTML = "Take";
+
+        let give_button = document.createElement("button");
+        give_button.innerHTML = "Give";
+
+        button_box.appendChild(say_button);
+        button_box.appendChild(take_button);
+        button_box.appendChild(give_button);
     }
-    else
+
+    wrapper.appendChild(script);
+    if (!spectating)
     {
-        var s = `<p class="action"><span class="name">${n}</span> ${text}</p>`;
-        script.insertAdjacentHTML("beforeend", s);
+        wrapper.appendChild(document.createElement("hr"));
+        wrapper.appendChild(entry_input);
+        wrapper.appendChild(button_box);
     }
-}
+    document.body.appendChild(wrapper);
 
-function scene(location, inside)
-{
-    var intext = inside ? "INT" : "EXT";
-    var s = `<p class="location"><span class="scene_number">${scene_counter}</span>${intext}. ${location.toUpperCase()}</p>`;
-    script.insertAdjacentHTML("beforeend", s);
-    ++scene_counter;
-}
-
-function description(text)
-{
-    var s = `<p class="description">${text}</p>`;
-    script.insertAdjacentHTML("beforeend", s);
-}
-
-function build_message_from_input(text)
-{
-    var message = "";
-    message += local_input_type;
-    message += ","
-    message += local_user_name;
-    message += ","
-    message += text;
-    return message;
-}
-
-entry_input.addEventListener("keypress", (event) =>
-{
-    if (event.key === "Enter")
+    function format_name(name)
     {
-        // handle_input(entry_input.value);
-        m = build_message_from_input(entry_input.value);
-        socket.send(m);
-        // parse_message(m);
-        entry_input.value = "";
-        window.scrollTo(0,document.body.scrollHeight);
+        return name.trim().toUpperCase();
     }
-    else if (event.key === "Tab")
+
+    function title(text)
     {
-        event.preventDefault();
-        local_input_type = local_input_type === "say" ? "do" : "say";
-        if (local_input_type === "say")
+        if (script.lastElementChild && script.lastElementChild.id === "script_title")
         {
-            name_display.innerHTML = local_user_name;
-            quote_1.innerHTML = "&ldquo;";
-            quote_2.innerHTML = "&rdquo;";
+             script.lastElementChild.innerHTML = `<h1 id="script_title">${text}</h1>`;
         }
         else
         {
-            name_display.innerHTML = local_user_name;
-            quote_1.innerHTML = "&MediumSpace;";
-            quote_2.innerHTML = "&MediumSpace;";
+            script.insertAdjacentHTML("afterbegin", `<h1 id="script_title">${text}</h1>`);
         }
-        input_type_display.innerHTML = `(${local_input_type})`;
+        scroll_to_bottom();
     }
-});
 
-function parse_message(message)
-{
-    var args = message.split(",");
-    console.log("message args:", args);
-    var type = args[0];
-    if (type === "title")       title(args[1]);
-    if (type === "say")         dialogue(args[1], args[2]);
-    if (type === "do")          action(args[1], args[2]);
-    if (type === "scene")       scene(args[1], args[2] === "true");
-    if (type === "description") description(args[1]);
+    function dialogue(name, text)
+    {
+        let n = format_name(name);
+        if (script.lastElementChild &&
+            script.lastElementChild.className === "dialogue" &&
+            script.lastElementChild.firstElementChild.innerHTML === n)
+        {
+            script.lastElementChild.insertAdjacentHTML("beforeend", `<p>${text}</p>`);
+        }
+        else
+        {
+            let s = `<div class="dialogue"><p class="name">${n}</p><p>${text}</p></div>`;
+            script.insertAdjacentHTML("beforeend", s);
+        }
+        scroll_to_bottom();
+    }
+
+    function action(name, text)
+    {
+        let n = format_name(name);
+        if (script.lastElementChild &&
+            script.lastElementChild.className === "action" &&
+            script.lastElementChild.firstElementChild.innerHTML === n)
+        {
+            let old_text = script.lastElementChild.innerHTML;
+            script.lastElementChild.innerHTML = old_text.concat(` <span class="name">${n}</span> ${text}`);
+        }
+        else
+        {
+            let s = `<p class="action"><span class="name">${n}</span> ${text}</p>`;
+            script.insertAdjacentHTML("beforeend", s);
+        }
+        scroll_to_bottom();
+    }
+
+    function scene(location, inside)
+    {
+        let intext = inside ? "INT" : "EXT";
+        let s = `<p class="location"><span class="scene_number">${scene_counter}</span>${intext}. ${location.toUpperCase()}</p>`;
+        script.insertAdjacentHTML("beforeend", s);
+        ++scene_counter;
+        scroll_to_bottom();
+    }
+
+    function description(text)
+    {
+        let s = `<p class="description">${text}</p>`;
+        script.insertAdjacentHTML("beforeend", s);
+        scroll_to_bottom();
+    }
+
+    //
+    // Message handling.
+    //
+
+    function send_message(type, x, y)
+    {
+        let message = { type: type, data: [ x, y ] };
+        let message_json = JSON.stringify(message);
+        socket.send(message_json);
+    }
+
+    function parse_message(message_json)
+    {
+        let message = JSON.parse(message_json);
+        switch (message.type)
+        {
+            case "title":       title(message.data[0]);                            break;
+            case "dialogue":    dialogue(message.data[0], message.data[1]);        break;
+            case "action":      action(message.data[0], message.data[1]);          break;
+            case "scene":       scene(message.data[0], message.data[1] == "true"); break;
+            case "description": description(message.data[0], message.data[1]);     break;
+            default: console.error(`Unknown message type '${message.type}'.`);
+        }
+    }
+
+    //
+    // Input handling.
+    //
+
+    if (!spectating)
+    {
+        entry_input.onkeydown = (event) =>
+        {
+            if (event.key === "Enter")
+            {
+                if (entry_input.value && entry_input.value !== "")
+                {
+                    send_message("dialogue", character_name, entry_input.value);
+                    entry_input.value = "";
+                }
+            }
+        };
+    }
+
+    //
+    // DEBUG
+    //
+
+    {
+        title("Hello world.");
+        scene("Dark Cave", true);
+        description("The cave is quiet and too dark to see anything.");
+        dialogue("ben", "Where are we?");
+        action("ben", "feels around on the ground until finding a wall.");
+        description("The wall gives way to another room. This room is lit by a single flaming torch mounted to the far wall.");
+        scroll_to_bottom();
+
+        scene("Light Cave", true);
+        description("This cave has old bones all over the floor.");
+        dialogue("ben", "Gross!");
+        scroll_to_bottom();
+    }
+
+    if (!spectating)
+    {
+        entry_input.focus();
+    }
 }
 
-
-// DEMO
-title("The Mystery of the Black Lagoon");
-scene("John and Mary's House", false);
-description("It's late at night, and all is quiet. Strange sounds are coming\
-    from the basement of John and Mary's house. Flashes of coloured light can\
-    be seen from a small basement window.");
+window.onload = main;
