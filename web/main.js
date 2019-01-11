@@ -3,6 +3,38 @@
     main.js
 */
 
+let scenario = {
+    name: "",
+    player_count: 0,
+    skip_questions: false,
+    characters:
+    [
+        {
+            name: "",
+            description: "",
+            goals: [ "", "", ],
+            verbs:
+            [
+                { verb: "", fn: (message)=>{} },
+            ],
+            questions:
+            [
+                { question:"",type:"",options:["",""],answer:"" },
+            ],
+        },
+    ],
+    objects:
+    [
+
+    ],
+    incoming_filter: (message) =>
+    {
+        return message.type === "dialogue"
+            && message.data[1].includes("magicword");
+    },
+    outgoing_filter: (message) => {},
+};
+
 let entry_input = null;
 let socket = null;
 let character_name = "Jane";
@@ -11,7 +43,12 @@ let character_action = "dialogue";
 function main()
 {
     init_socket();
-    menu_mode();
+
+    start_mode();
+    // character_profile_mode();
+    // script_mode();
+    // question_mode();
+    // results_mode();
 }
 
 function scroll_to_bottom()
@@ -32,9 +69,10 @@ function init_socket()
     }
 
     socket.onopen = (event) => console.log("Socket connected!");
+    socket.onmessage = (event) => console.log(event.data);
 }
 
-function menu_mode()
+function start_mode()
 {
     document.body.innerHTML = "";
 
@@ -57,7 +95,7 @@ function menu_mode()
             <li>You will enter a room with other players.</li>
             <li>Fulfil your goal.</li>
         </ol>
-
+        <div class="status_message">Waiting for more players...</div>
         <div class="flex">
             <button id="play_button">Play</button>
             <button id="spectate_button">Spectate</button>
@@ -69,8 +107,61 @@ function menu_mode()
     let play_button = document.getElementById("play_button");
     let spectate_button = document.getElementById("spectate_button");
 
-    play_button.onclick = () => script_mode(false);
-    spectate_button.onclick = () => script_mode(true);
+    let status_message = document.querySelector(".status_message");
+    status_message.hidden = true;
+
+    play_button.onclick = () =>
+    {
+        socket.send("ready");
+        play_button.disabled = true;
+        spectate_button.disabled = true;
+        status_message.hidden = false;
+    }
+
+    spectate_button.onclick = () =>
+    {
+        socket.send("spectating");
+        play_button.disabled = true;
+        spectate_button.disabled = true;
+        status_message.hidden = false;
+    }
+
+    socket.onmessage = (event) =>
+    {
+        console.log(event);
+        let message = JSON.parse(event.data);
+        if (message && message.type === "update" &&
+            message.player_count && message.player_target)
+        {
+            status_message.innerHTML =
+                `Waiting for more players... (%{message.player_count}/%{message.player_target})`;
+        }
+        else if (message && message.type === "ready" &&
+            message.player_count && message.player_target)
+        {
+            status_message.innerHTML = `Ready! (%{message.player_count}/%{message.player_target})`;
+            play_button.disabled = false;
+            spectate_button.disabled = false;
+            socket.send("{type:\"ready\"}");
+        }
+    };
+}
+
+function character_profile_mode()
+{
+    document.body.innerHTML = "";
+
+    menu = document.createElement("div");
+    menu.setAttribute("id", "menu");
+
+    menu.innerHTML =
+    `
+        <h1>Character Profile</h1>
+        <hr>
+        <p>This is your character profile.</p>
+    `;
+
+    document.body.appendChild(menu);
 }
 
 function script_mode(spectating)
@@ -101,15 +192,15 @@ function script_mode(spectating)
     script = document.createElement("div");
     script.setAttribute("id", "script");
 
-    let button_box;
+    let input_area;
     if (!spectating)
     {
         entry_input = document.createElement("input");
         entry_input.setAttribute("id", "entry");
         entry_input.setAttribute("type", "text");
 
-        button_box = document.createElement("div");
-        button_box.setAttribute("class", "flex");
+        input_area = document.createElement("div");
+        input_area.setAttribute("class", "flex");
 
         let say_button = document.createElement("button");
         say_button.innerHTML = "Say";
@@ -121,17 +212,17 @@ function script_mode(spectating)
         let give_button = document.createElement("button");
         give_button.innerHTML = "Give";
 
-        button_box.appendChild(say_button);
-        button_box.appendChild(take_button);
-        button_box.appendChild(give_button);
+        input_area.appendChild(entry_input);
+        input_area.appendChild(say_button);
+        input_area.appendChild(take_button);
+        input_area.appendChild(give_button);
     }
 
     wrapper.appendChild(script);
     if (!spectating)
     {
         wrapper.appendChild(document.createElement("hr"));
-        wrapper.appendChild(entry_input);
-        wrapper.appendChild(button_box);
+        wrapper.appendChild(input_area);
     }
     document.body.appendChild(wrapper);
 
@@ -253,7 +344,7 @@ function script_mode(spectating)
     //
 
     {
-        title("Hello world.");
+        title("Tunnels Of Doom");
         scene("Dark Cave", true);
         description("The cave is quiet and too dark to see anything.");
         dialogue("ben", "Where are we?");
@@ -271,6 +362,131 @@ function script_mode(spectating)
     {
         entry_input.focus();
     }
+}
+
+function question_mode()
+{
+    document.body.innerHTML = "";
+
+    menu = document.createElement("div");
+    menu.setAttribute("id", "menu");
+
+    menu.innerHTML =
+    `
+        <h1>Questions</h1>
+        <hr>
+        <p>The game has ended. Now, let's see if you achieved your goal. Answer the questions below.</p>
+    `;
+
+    let question_list = document.createElement("ol");
+
+    // DEBUG
+    queries =
+    [
+        {question:"Was there a spoon?",type:"select",options:["Yes","No"],answer:"No"},
+        {question:"Who did it?",type:"select",options:["Me","You","Nobody"],answer:"Me"},
+        {question:"What is the codeword?",type:"text_entry",answer:"fart"},
+    ];
+
+    for (let query of queries)
+    {
+        let question_box = document.createElement("li");
+        question_box.setAttribute("class", "summary_question");
+
+        let question_text = document.createElement("p");
+        question_text.innerHTML = query.question;
+        question_box.appendChild(question_text);
+
+        if (query.type === "select")
+        {
+            for (let i in query.options)
+            {
+                let question_input = document.createElement("input");
+                let option = query.options[i];
+                question_input.setAttribute("class", "option_radio");
+                question_input.setAttribute("type", "radio");
+                question_input.setAttribute("name", query.question);
+                question_input.setAttribute("value", option);
+
+                let option_text = document.createElement("label");
+                option_text.setAttribute("class", "option_text");
+                option_text.setAttribute("for", option);
+                option_text.innerHTML = option;
+
+                question_box.appendChild(question_input);
+                question_box.appendChild(option_text);
+                question_box.appendChild(document.createElement("br"));
+            }
+        }
+        else if (query.type === "text_entry")
+        {
+            let entry = document.createElement("input");
+            entry.setAttribute("type", "text");
+            entry.setAttribute("name", query.question);
+            question_box.appendChild(entry);
+        }
+
+        question_list.appendChild(question_box);
+    }
+
+    let submit_button = document.createElement("button");
+    submit_button.setAttribute("class", "submit_button");
+    submit_button.innerHTML = "Submit";
+
+    submit_button.onclick = (event) =>
+    {
+        for (let query of queries)
+        {
+            inputs = document.querySelectorAll(`[name=\"${query.question}\"]`);
+            let type = inputs[0].getAttribute("type");
+            if (type === "radio")
+            {
+                for (let option of inputs)
+                {
+                    if (option.checked)
+                    {
+                        if (query.answer === option.value)
+                        {
+                            queries.correct = true;
+                            console.log("Correct:", query.question);
+                        }
+                    }
+                }
+            }
+            else if (type === "text")
+            {
+                for (let option of inputs)
+                {
+                    if (option.value === query.answer)
+                    {
+                        queries.correct = true;
+                        console.log("Correct:", query.question);
+                    }
+                }
+            }
+        }
+    };
+
+    menu.appendChild(question_list);
+    menu.appendChild(submit_button);
+    document.body.appendChild(menu);
+}
+
+function results_mode()
+{
+    document.body.innerHTML = "";
+
+    menu = document.createElement("div");
+    menu.setAttribute("id", "menu");
+
+    menu.innerHTML =
+    `
+        <h1>Results</h1>
+        <hr>
+        <p>Here are the results...</p>
+    `;
+
+    document.body.appendChild(menu);
 }
 
 window.onload = main;

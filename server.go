@@ -7,18 +7,35 @@ import (
     "net/http"
 )
 
+type user struct {
+    connection *websocket.Conn
+    active     bool
+    id         int
+}
+
+var users []user
+var user_count int
+
+func count_active_users() int {
+    count := 0
+    for _, u := range users {
+        if u.active {
+            count++
+        }
+    }
+    return count
+}
+
 func main() {
-    cert       := flag.String("cert", "",     "TLS certificate.")
-    key        := flag.String("key",  "",     "TLS private key.")
+    cert := flag.String("cert", "", "TLS certificate.")
+    key := flag.String("key", "", "TLS private key.")
     static_dir := flag.String("path", "web/", "Static file directory.")
     flag.Parse()
 
-    var upgrader = websocket.Upgrader {
+    var upgrader = websocket.Upgrader{
         ReadBufferSize:  1024,
         WriteBufferSize: 1024,
     }
-
-    var connections []*websocket.Conn
 
     http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
         new_connection, e := upgrader.Upgrade(writer, request, nil)
@@ -27,24 +44,48 @@ func main() {
             return
         }
 
-        connections = append(connections, new_connection)
+        new_connection.WriteMessage(websocket.TextMessage,
+            []byte(fmt.Sprintf("{\"type\":\"update\",\"player_count\":%d, \"player_target\":%d }", user_count, 10)))
+
+        this_user := user{connection: new_connection, active: true, id: user_count}
+        user_count++
+
+        found := false
+        for i := range users {
+            if !users[i].active {
+                users[i] = this_user
+            }
+        }
+
+        if !found {
+            users = append(users, this_user)
+        }
 
         for {
             message_type, message, e := new_connection.ReadMessage()
             if e != nil {
                 fmt.Printf("ERROR (ReadMessage): %s\n", e)
+                error_code, _ := e.(*websocket.CloseError)
+                if error_code.Code == 1001 {
+                    this_user.active = false
+                }
                 return
             }
 
-            fmt.Printf("%s sent: %s %s\n",
-                new_connection.RemoteAddr(),
-                string(message_type),
-                string(message))
+            if string(message) == "ready" {
+                fmt.Printf("Ready!\n")
+            } else if string(message) == "spectating" {
+                fmt.Printf("Spectating!\n")
+            }
 
-            for _, c := range connections {
-                e = c.WriteMessage(message_type, message)
-                if e != nil {
-                    fmt.Printf("ERROR (WriteMessage): %s\n", e)
+            fmt.Printf("%s sent: %s %s\n", new_connection.RemoteAddr(), string(message_type), string(message))
+
+            for _, c := range users {
+                if c.active {
+                    e = c.connection.WriteMessage(message_type, message)
+                    if e != nil {
+                        fmt.Printf("ERROR (WriteMessage): %s\n", e)
+                    }
                 }
             }
         }

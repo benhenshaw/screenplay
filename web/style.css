@@ -1,10 +1,13 @@
-body { font-size: 12pt; font-family: Courier, monospace; min-width: 300px; }
+body
+{
+    font-size: 12pt; font-family: Courier, monospace;
+    text-rendering: optimizeLegibility;
+    min-width: 300px;
+}
 #wrapper { max-width: 45em; margin: 1em auto 1em auto; }
 #menu
 {
-    max-width: 45em; margin: 1em auto 1em auto;
-    padding: 1em;
-    border: 1px solid #000;
+    max-width: 45em; margin: 1em auto 1em auto; padding: 1em;
 }
 #script {  }
 .description {  }
@@ -16,11 +19,11 @@ body { font-size: 12pt; font-family: Courier, monospace; min-width: 300px; }
 .scene_number { margin-right: 5%; display: inline-block; }
 hr { border: none; border-top: 1px solid #bbb; width: 100%; margin: 0.5em 0; }
 h1 { text-align: center; font-size: 1em; text-transform: uppercase; }
-input
+input[type=text] { font-family: inherit; font-size: inherit; }
+input#entry
 {
     display: block; width: 95%; height: 1.25em;
     margin: 0.5em auto; padding: 0 0.2em 0 0.2em; border: 1px solid #000;
-    font-family: inherit; font-size: inherit;
 }
 button
 {
@@ -31,10 +34,19 @@ button
 }
 button:hover { background-color: #eee; box-shadow: 0.1em 0.1em #000; }
 button:active { background-color: #eee; box-shadow: 0 0 #000; }
-button:disabled { background-color: #000; color: #fff; box-shadow: 0 0 #000; }
+button:disabled { cursor: initial; background-color: #000; color: #fff; box-shadow: 0 0 #000; }
 .flex
 {
     width: 100%; margin: auto;
-    display: flex; flex-direction: row; flex-wrap: nowrap;
+    display: flex; flex-direction: row; flex-wrap: wrap;
     justify-content: center;
 }
+.status_message
+{
+    font-style: italic;
+    text-align: center;
+    margin: 1em;
+}
+label { margin: 0.5em 0.5em; }
+.option_radio { margin: 0.5em; border: 1px solid #000; }
+.submit_button { width: 8em; display:block; margin: auto; }
