@@ -1,3 +1,6 @@
+//  server.go
+//  Benedict Henshaw, 2019
+
 package main
 
 import (
@@ -7,124 +10,124 @@ import (
     "net/http"
 )
 
-type user struct {
-    connection *websocket.Conn
-    active     bool
-    id         int
+// Number of connected users who have opted to play.
+var player_count int = 0
+
+// Maximum number of players allowed. User connected after the max has been
+// reached will only be allowed to spectate the game.
+var player_max int = 8
+
+// Array of all users that have announced themselves to the server.
+var users []*websocket.Conn
+
+//
+// WebSocket.
+//
+
+var upgrader = websocket.Upgrader{
+    ReadBufferSize:  1024,
+    WriteBufferSize: 1024,
 }
 
-var users []user
-var user_count int
-
-func count_active_users() int {
-    count := 0
-    for _, u := range users {
-        if u.active {
-            count++
-        }
-    }
-    return count
-}
-
-func main() {
-    cert := flag.String("cert", "", "TLS certificate.")
-    key := flag.String("key", "", "TLS private key.")
-    static_dir := flag.String("path", "web/", "Static file directory.")
-    flag.Parse()
-
-    var upgrader = websocket.Upgrader{
-        ReadBufferSize:  1024,
-        WriteBufferSize: 1024,
+func websocket_handler(writer http.ResponseWriter, request *http.Request) {
+    // Upgrade all connections to this address ("/ws") to WebSocket connections.
+    c, e := upgrader.Upgrade(writer, request, nil)
+    if e != nil {
+        fmt.Printf("WebSocket Error (Upgrade): %s\n", e)
+        return
     }
 
-    http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
-        new_connection, e := upgrader.Upgrade(writer, request, nil)
+    // Wait for (and respond to) a message from the user declaring whether they
+    // want to play or spectate.
+    _, message, e := c.ReadMessage()
+    if e != nil {
+        fmt.Printf("Error while waiting for join message: %s\n", e)
+        return
+    }
+
+    if string(message) == "ready" && player_count < player_max {
+        join_message := fmt.Sprintf(`{"type":"join","player_index":%d,"player_max":%d}`,
+            player_count,player_max)
+        c.WriteMessage(websocket.TextMessage, []byte(join_message))
+        player_count++
+    } else {
+        join_message := fmt.Sprintf(`{"type":"spec"}`)
+        c.WriteMessage(websocket.TextMessage, []byte(join_message))
+    }
+
+    // Now that this connection has announced itself, put it into the array.
+    // Reuse any empty slots before allocating a new one.
+    users = append(users, c)
+    id := len(users) - 1
+
+    // Handle all incoming messages, echoing them to every connected user.
+    for {
+        message_type, message, e := c.ReadMessage()
         if e != nil {
-            fmt.Printf("ERROR (Upgrade): %s\n", e)
+            fmt.Printf("ER: %s\n", e)
+            // Kick out any users that we cannot accept messages from.
+            c.Close()
+            users[id] = nil
             return
         }
 
-        new_connection.WriteMessage(websocket.TextMessage,
-            []byte(fmt.Sprintf("{\"type\":\"update\",\"player_count\":%d, \"player_target\":%d }", user_count, 10)))
+        fmt.Printf("[%d] %s\n", id, string(message))
 
-        this_user := user{connection: new_connection, active: true, id: user_count}
-        user_count++
-
-        found := false
-        for i := range users {
-            if !users[i].active {
-                users[i] = this_user
-            }
-        }
-
-        if !found {
-            users = append(users, this_user)
-        }
-
-        for {
-            message_type, message, e := new_connection.ReadMessage()
-            if e != nil {
-                fmt.Printf("ERROR (ReadMessage): %s\n", e)
-                error_code, _ := e.(*websocket.CloseError)
-                if error_code.Code == 1001 {
-                    this_user.active = false
+        for i, u := range users {
+            if u != nil {
+                e := u.WriteMessage(message_type, message)
+                if e != nil {
+                    fmt.Printf("EW: %s\n", e)
                 }
-                return
-            }
-
-            if string(message) == "ready" {
-                fmt.Printf("Ready!\n")
-            } else if string(message) == "spectating" {
-                fmt.Printf("Spectating!\n")
-            }
-
-            fmt.Printf("%s sent: %s %s\n", new_connection.RemoteAddr(), string(message_type), string(message))
-
-            for _, c := range users {
-                if c.active {
-                    e = c.connection.WriteMessage(message_type, message)
-                    if e != nil {
-                        fmt.Printf("ERROR (WriteMessage): %s\n", e)
-                    }
-                }
+                fmt.Printf("Sent to [%d]: %s\n", i, string(message))
             }
         }
-    })
+    }
+}
 
+//
+// Main.
+//
+
+func main() {
+    //
+    // Command-line arguments.
+    //
+
+    cert := flag.String("cert", "",     "TLS certificate.")
+    key  := flag.String("key",  "",     "TLS private key.")
+    dir  := flag.String("path", "web/", "Static file directory.")
+    flag.Parse()
+
+    //
+    // Web server.
+    //
+
+    file_server := http.FileServer(http.Dir(*dir))
+    http.Handle("/", file_server)
+    http.HandleFunc("/ws", websocket_handler)
+
+    // If we have the credentials for TLS, use HTTPS. Otherwise, use HTTP.
     if *cert != "" && *key != "" {
-        file_server := http.FileServer(http.Dir(*static_dir))
-        http.Handle("/", file_server)
-
-        address := ":443"
-        fmt.Printf("Launching HTTPS server on %s, serving files from '%s'.\n", address, *static_dir)
-        e := http.ListenAndServeTLS(address, *cert, *key, nil)
+        e := http.ListenAndServeTLS(":443", *cert, *key, nil)
         if e != nil {
-            fmt.Printf("HTTPS Server Error:\n%s\n", e)
+            fmt.Printf("HTTPS Server Error: %s\n", e)
+            return
         }
-
-        // Forward http requests to https.
-        redirector := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-            http.Redirect(
-                writer,
-                request,
+        // Redirect HTTP requests to HTTPS.
+        redirector := http.HandlerFunc(func(writer http.ResponseWriter, request * http.Request) {
+            http.Redirect(writer, request,
                 "https://"+request.Host+request.RequestURI,
                 http.StatusMovedPermanently)
         })
-        redirect_address := ":80"
-        fmt.Printf("Launched HTTP -> HTTPS redirect server on %s.\n", redirect_address)
-        e = http.ListenAndServe(redirect_address, redirector)
+        e = http.ListenAndServe(":80", redirector)
         if e != nil {
-            fmt.Printf("HTTP Server Error:\n%s\n", e)
+            fmt.Printf("Redirect Server Error: %s\n", e)
         }
     } else {
-        file_server := http.FileServer(http.Dir(*static_dir))
-        http.Handle("/", file_server)
-
-        address := ":80"
-        fmt.Printf("Launching HTTP server on %s, serving files from '%s'.\n", address, *static_dir)
-        e := http.ListenAndServe(address, nil)
+        e := http.ListenAndServe(":80", nil)
         if e != nil {
-            fmt.Printf("HTTP Server Error:\n%s\n", e)
+            fmt.Printf("HTTP Server Error: %s\n", e)
         }
     }
 }
