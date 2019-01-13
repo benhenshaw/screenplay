@@ -133,10 +133,6 @@ func main() {
 
     // If we have the credentials for TLS, use HTTPS. Otherwise, use HTTP.
     if *cert != "" && *key != "" {
-        file_server := http.FileServer(http.Dir(*dir))
-        http.Handle("/", file_server)
-        log.Fatal(http.ListenAndServeTLS(":443", *cert, *key, nil))
-        fmt.Printf("Launched HTTPS Server on port 80.\n");
         // Redirect HTTP requests to HTTPS.
         redirector := http.HandlerFunc(func(writer http.ResponseWriter, request * http.Request) {
             http.Redirect(writer, request,
@@ -145,6 +141,11 @@ func main() {
         })
         log.Fatal(http.ListenAndServe(":80", redirector))
         fmt.Printf("Launched HTTP -> HTTPS Redirector on port 80.\n");
+
+        file_server := http.FileServer(http.Dir(*dir))
+        http.Handle("/", file_server)
+        log.Fatal(http.ListenAndServeTLS(":443", *cert, *key, nil))
+        fmt.Printf("Launched HTTPS Server on port 80.\n");
     } else {
         file_server := http.FileServer(http.Dir(*dir))
         http.Handle("/", file_server)
