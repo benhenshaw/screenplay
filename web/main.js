@@ -8,6 +8,7 @@ let character      = null;
 let script         = null;
 let scene_counter  = 1;
 let spectating     = false;
+let input_area     = null;
 
 //
 // Scenario.
@@ -21,21 +22,178 @@ let scenario =
 {
     start: () =>
     {
-        title("Ghosts in the Cavern");
-        scene("Abandoned Mine", true);
-        description("The gang are in an abandoned mine.");
+        title("Ghosts in the Old Gold Mine");
+        scene("Dirt Road in Dead Forest", false);
+        description("The Mystery Mobile is seen driving along a dark and dusty road, surrounded by dead trees, "+
+                    " moonlight illuminating the path. Here and there small glowing eyes peer at the gang "+
+                    "as they drive by, and bats can be seen flying in the distance sky.");
+        dialogue("Narrator", "Only days after successfully capturing the Ghastly Ghost of Ghoul Manor, "+
+                             "Scoob and the gang are at it again. But will they pull it off this time?");
+        description("The gang are on the search for treasure. They caught word that long ago some "+
+                    "wealthy GOLD MINE owner lost her mind and fired all her workers, barricading "+
+                    "herself into the mine, never to be seen again.");
+        scene("Outside the Mine", false);
+        description("After taking a few wrong turns, the gang have gotten themselves lost. "+
+                    "The engine of their beloved van thuds and whimpers, coming to a halt. "+
+                    "They're out of gas, but they've made it to the GOLD MINE. It's boarded up with old rotten wood.");
+        button_prompt("Enter the GOLD MINE", true, () =>
+        {
+            send_message("description", `${character.short_name} decided that the gang should go into the GOLD MINE. `+
+                "A gentle tug on the wooden boards causes them to fall apart, and the entryway is revealed.");
+            send_message("scene", "Mine Shaft", true);
+            send_message("description", "Using Velma's trusty flash-light, the gang venture deep into the mine in search "+
+                "of gold, or mysterious clues. They reach an old room with some oak furniture, including a writing "+
+                "desk, at which a SKELETON sits. A faintly GLOWING BOX rest upon the desk, covered in dust.");
+            send_message("description", "It is very dark here, and the gang will certainly be lost forever if "+
+                "their flash-light went out. It has THREE MINUTES of charge left.");
+            send_message("flashlight");
+            send_message("inside_mine", character.short_name);
+        })
     },
 
     filter: (message) =>
     {
         if (message.type === "dialogue")
         {
-            if (message.data[0] == "Fred Jones")
+            if (scenario.near_box && message.data[1].toLowerCase().includes("gimme the gold"))
             {
-                description("Fred talks too loud, and the cave crumbles from the reverberations.");
-                title("------ Game Over ------");
-                window.setTimeout(summary_mode, 5000);
+                description("The GLOWING BOX starts clicking, and the humming grows louder. "+
+                            "After a few moments it is almost too much to bare.");
+                description("The whole gang crowd around the box as it starts to open. The top splits in "+
+                    "two, each piece falling to the side, revealing a pile of glistening GOLD NUGGETS.");
+                description("The gang pocket as much gold as they can. In the background, a hidden "+
+                            "door reveals itself, opening up to grant access to a stone staircase, "+
+                            "descending into darkness.");
+
+                for (let i = 0; i < scenario.characters.length; ++i)
+                {
+                    scenario.characters[i].questions[0].text =
+                        "You, and the rest of the gang, managed to find the legendary gold!";
+                }
+
+                button_prompt_exclusive_pair(
+                    "Take the DARK STAIRCASE", () =>
+                    {
+                        send_message("description",
+                            `${character.short_name} decideds to lead the gang down the DARK STAIRCASE.`);
+                        send_message("scene", "Stone Staircase", true);
+                        send_message("description", "Stone steps echo every footstep as the gang descend deeper into the cavernous mine."+
+                            "The flash-light flickers, as a distant voice is heard.");
+                        send_message("dialogue", "Disembodied Voice", "Begone thieves! If you stray any closer to my dwelling "+
+                            "I shall have to take your lives.");
+                        send_message("staircase");
+                    },
+                    "Leave the GOLD MINE", () =>
+                    {
+                        send_message("left_mine");
+                        send_message("description",
+                            `${character.short_name} decideds that it is time to leave the mine and head home.`);
+                        send_message("scene", "Outside the Mine", false);
+                        send_message("description", "The gang emerge triumphant, gold in pocket, and head to the Mystery Machine. "+
+                            "The sun is beginning to rise over the dead forest, and distant birds can be heard chirping.");
+                        send_message("description", "Climbing inside, Daphne notices that they have a spare bottle of gas under the back seat. "+
+                            "She goes out to fill up the tank.");
+                        send_message("description", "With the van in working order, the gang drive off into the sunrise significantly richer, "+
+                            "off to find another mystery to solve.");
+                        send_message("end");
+                    }
+                );
             }
+        }
+        else if (message.type === "flashlight")
+        {
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TWO MINUTES of charge left.")},    60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has ONE MINUTE of charge left.")},     120000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THIRTY SECONDS of charge left.")}, 150000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TEN SECONDS of charge left.")},    170000);
+            window.setTimeout(() =>
+            {
+                if (!scenario.stop_countdown)
+                {
+                    description("The flash-light has run out of charge. The gang are plunged into darkness, never to be seen again.");
+                    trigger_end();
+                }
+            }, 180000);
+        }
+        else if (message.type === "inside_mine")
+        {
+            scenario.near_box = true;
+            button_prompt_inclusive_pair(
+                "Search SKELETON", () =>
+                {
+                    send_message("description", `The skeleton crumbles into dust the moment ${character.short_name} touches it.`);
+                    send_message("description", "Among the dust a small note can be found. It has a poem of some sort, though "+
+                        "almost all of it has faded away. The last few words can be read clearly, which are:");
+                    send_message("description", "\"... gimme the gold.\"");
+                },
+                "Examine GLOWING BOX", () =>
+                {
+                    send_message("description",
+                        `${character.short_name} brushes dusk off the GLOWING BOX and takes a better look. `+
+                        "It is small enough to hold in your hands. If listened to carefully "+
+                        "one can hear faint humming; an old miner's song.");
+                }
+            );
+        }
+        else if (message.type === "left_mine")
+        {
+            scenario.stop_countdown = true;
+            for (let i = 0; i < scenario.characters.length; ++i)
+            {
+                scenario.characters[i].questions[1].text = "You made it out of the mine alive!";
+            }
+        }
+        else if (message.type === "staircase")
+        {
+            button_prompt_exclusive_pair(
+                "Go DEEPER", () =>
+                {
+                    send_message("scene", "Stone Dungeon", true);
+                    send_message("description", "The gang continues on into the depths of the mine. The steps of the staircase "+
+                        "are wet here, with black mould growing along the edges. The flash-light flickers more the deeper they get.");
+                    window.setTimeout(() =>
+                    {
+                        if (!scenario.reached_end)
+                        {
+                            send_message("description", "They continue walking down. As they get deeper the staircase starts to twist and turn.");
+                        }
+                    }, 5000);
+                    window.setTimeout(() =>
+                    {
+                        if (!scenario.reached_end)
+                        {
+                            send_message("description", "The gang continue, despite seeing no end to the staircase.");
+                        }
+                    }, 15000);
+                    window.setTimeout(() =>
+                    {
+                        if (!scenario.reached_end)
+                        {
+                            send_message("description", "Faint scratching sounds are heard.");
+                        }
+                    }, 30000);
+                },
+                "Leave the GOLD MINE", () =>
+                {
+                    send_message("left_mine");
+                    send_message("description",
+                        `${character.short_name} decideds that the gang should ascend the staircase, leave the GOLD MINE, and head home.`);
+                    send_message("scene", "Outside the Mine", false);
+                    send_message("description", "The gang emerge triumphant, gold in pocket, and head to the Mystery Machine. "+
+                        "The sun is beginning to rise over the dead forest, and distant birds can be heard chirping.");
+                    send_message("description", "Climbing inside, Daphne notices that they have a spare bottle of gas under the back seat. "+
+                        "She goes out to fill up the tank.");
+                    send_message("description", "With the van in working order, the gang drive off into the sunrise significantly richer, "+
+                        "off to find another mystery to solve.");
+                    send_message("end");
+                }
+            );
+        }
+        else if (message.type === "end")
+        {
+            scenario.stop_countdown = true;
+            scenario.reached_end = true;
+            trigger_end();
         }
     },
 
@@ -45,22 +203,36 @@ let scenario =
             name: "Daphne Blake",
             short_name: "Daphne",
             description: "Daphne Blake is an enthusiastic but clumsy and danger-prone member of the gang, who always "+
-                         "follows her intuition. She occasionally helps out by using some random, yet helpful, accessories"+
-                         "from her purse. Daphne comes from a wealthy family. She has red hair and wears a lavender dress and shoes."+
+                         "follows her intuition. She occasionally helps out by using some random, yet helpful, accessories "+
+                         "from her purse. Daphne comes from a wealthy family. She has red hair and wears a lavender dress and shoes. "+
                          "Her catchphrase is \"Jeepers!\"",
             goals:
             [
-                "Open the magic door.",
+                "Get the gold.",
+                "Make it out alive.",
                 "Use your catchphrase.",
+                "Uncover the secrets of the old GOLD MINE."
             ],
             questions:
             [
-                {question:"Open the magic door.",type:"text",text:"You, and the rest of the gang, managed to open the door!"},
+                {question:"Get the gold.",type:"text",text:"You didn't find the gold."},
+                {question:"Make it out alive.",type:"text",text:"You died in the GOLD MINE."},
                 {question:"Use your catchphrase.",type:"text",text:"You never said \"Jeepers!\""},
+                {question:"Uncover the secrets of the old GOLD MINE.",type:"text",text:"You didn't discover the mine's secrets."},
             ],
             filter: (message) =>
             {
+                let me = scenario.characters[0];
 
+                if (message.type === "dialogue")
+                {
+                    if (message.data[1].toLowerCase().includes("jeepers"))
+                    {
+                        if (!me.catchphrase_count) me.catchphrase_count = 0;
+                        me.catchphrase_count++
+                        me.questions[2].text = `You said \"Jeepers!\" ${me.catchphrase_count} times!`;
+                    }
+                }
             },
         },
         {
@@ -72,17 +244,31 @@ let scenario =
                          "His catchphrase is: \"Looks like we've got another mystery on our hands.\"",
             goals:
             [
-                "Open the magic door.",
+                "Get the gold.",
+                "Make it out alive.",
                 "Use your catchphrase.",
+                "Uncover the secrets of the old GOLD MINE."
             ],
             questions:
             [
-                {question:"Open the magic door.",type:"text",text:"You, and the rest of the gang, managed to open the door!"},
+                {question:"Get the gold.",type:"text",text:"You didn't find the gold."},
+                {question:"Make it out alive.",type:"text",text:"You died in the GOLD MINE."},
                 {question:"Use your catchphrase.",type:"text",text:"You never said \"Looks like we've got another mystery on our hands.\""},
+                {question:"Uncover the secrets of the old GOLD MINE.",type:"text",text:"You didn't discover the mine's secrets."},
             ],
             filter: (message) =>
             {
+                let me = scenario.characters[1];
 
+                if (message.type === "dialogue")
+                {
+                    if (message.data[1].toLowerCase().includes("another mystery on our hands"))
+                    {
+                        if (!me.catchphrase_count) me.catchphrase_count = 0;
+                        me.catchphrase_count++
+                        me.questions[1].text = `You said \"Looks like we've got another mystery on our hands.\" ${me.catchphrase_count} times!`;
+                    }
+                }
             },
         },
         {
@@ -94,42 +280,78 @@ let scenario =
                          "He is very fond of Scooby Snacks. His catchphrase is: \"Ruh roh Raggy!\"",
             goals:
             [
-                "Open the magic door.",
-                "Eat some Scooby Snacks.",
+                "Get the gold.",
+                "Make it out alive.",
                 "Use your catchphrase.",
+                "Uncover the secrets of the old GOLD MINE."
             ],
             questions:
             [
-                {question:"Open the magic door.",type:"text",text:"You, and the rest of the gang, managed to open the door!"},
+                {question:"Get the gold.",type:"text",text:"You didn't find the gold."},
+                {question:"Make it out alive.",type:"text",text:"You died in the GOLD MINE."},
                 {question:"Use your catchphrase.",type:"text",text:"You never said \"Ruh roh Raggy!\""},
+                {question:"Uncover the secrets of the old GOLD MINE.",type:"text",text:"You didn't discover the mine's secrets."},
             ],
             filter: (message) =>
             {
+                let me = scenario.characters[2];
 
+                if (message.type === "dialogue")
+                {
+                    if (message.data[1].toLowerCase().includes("ruh roh raggy"))
+                    {
+                        if (!me.catchphrase_count) me.catchphrase_count = 0;
+                        me.catchphrase_count++
+                        me.questions[1].text = `You said \"Ruh roh Raggy!\" ${me.catchphrase_count} times!`;
+                    }
+                }
             },
         },
         {
             name: "Shaggy Rogers",
             short_name: "Shaggy",
             description: "Norville \"Shaggy\" Rogers is a cowardly slacker and long-time best friend of Scooby-Doo. "+
-                         "Shaggy has a characteristic speech pattern, marked by his frequent use of the filler word"+
+                         "Shaggy has a characteristic speech pattern, marked by his frequent use of the filler word "+
                          " \"like\" and, when startled, his catchphrase \"Zoinks!\". His nickname derives from "+
-                         "the shaggy style of his sandy-blond hair."+
+                         "the shaggy style of his sandy-blond hair. "+
                          "Like Scooby-Doo, Shaggy is more interested in eating than solving mysteries.",
             goals:
             [
-                "Open the magic door.",
-                "Eat some Scooby Snacks.",
-                "Use the word \"like\" more than once in a sentence.",
+                "Get the gold.",
+                "Make it out alive.",
                 "Use your catchphrase.",
+                "Use the word \"like\" more than once in a sentence.",
+                "Uncover the secrets of the old GOLD MINE."
             ],
             questions:
             [
-                {question:"Open the magic door.",type:"text",text:"You, and the rest of the gang, managed to open the door!"},
+                {question:"Get the gold.",type:"text",text:"You didn't find the gold."},
+                {question:"Make it out alive.",type:"text",text:"You died in the GOLD MINE."},
+                {question:"Use your catchphrase.",type:"text",text:"You never said \"Zoinks!\""},
+                {question:"Use the word \"like\" more than once in a sentence.",type:"text",text:"You never said \"like\" more than once in a sentence."},
+                {question:"Uncover the secrets of the old GOLD MINE.",type:"text",text:"You didn't discover the mine's secrets."},
             ],
             filter: (message) =>
             {
+                let me = scenario.characters[3];
 
+                if (message.type === "dialogue")
+                {
+                    if (message.data[1].toLowerCase().includes("zoinks"))
+                    {
+                        if (!me.catchphrase_count) me.catchphrase_count = 0;
+                        me.catchphrase_count++
+                        me.questions[1].text = `You said \"Zoinks!\" ${me.catchphrase_count} times!`;
+                    }
+                    if (message.data[1].toLowerCase().includes("like"))
+                    {
+                        let like_count = count_substring(message.data[1].toLowerCase(), "like")
+                        if (like_count > 1)
+                        {
+                            me.questions[2].text = `You said \"like\" ${like_count} times in one sentence!`;
+                        }
+                    }
+                }
             },
         },
         {
@@ -141,19 +363,39 @@ let scenario =
                          "Her catchphrase is: \"Jinkies!\". She often exclaims \"My glasses! I can't see without my glasses!\"",
             goals:
             [
-                "Open the magic door.",
+                "Get the gold.",
+                "Make it out alive.",
                 "Use your catchphrase.",
                 "Mention your glasses.",
+                "Uncover the secrets of the old GOLD MINE."
             ],
             questions:
             [
-                {question:"Open the magic door.",type:"text",text:"You, and the rest of the gang, managed to open the door!"},
+                {question:"Get the gold.",type:"text",text:"You didn't find the gold."},
+                {question:"Make it out alive.",type:"text",text:"You died in the GOLD MINE."},
                 {question:"Use your catchphrase.",type:"text",text:"You never said \"Jinkies!\"."},
                 {question:"Mention your glasses.",type:"text",text:"You never mentioned your glasses."},
+                {question:"Uncover the secrets of the old GOLD MINE.",type:"text",text:"You didn't discover the mine's secrets."},
             ],
             filter: (message) =>
             {
+                let me = scenario.characters[4];
 
+                if (message.type === "dialogue")
+                {
+                    if (message.data[1].toLowerCase().includes("jinkies"))
+                    {
+                        if (!me.catchphrase_count) me.catchphrase_count = 0;
+                        me.catchphrase_count++
+                        me.questions[1].text = `You said \"Jinkies!\" ${me.catchphrase_count} times!`;
+                    }
+                    if (message.data[1].toLowerCase().includes("glasses"))
+                    {
+                        if (!me.glasses_count) me.glasses_count = 0;
+                        me.glasses_count += count_substring(message.data[1].toLowerCase(), "glasses");
+                        me.questions[2].text = `You mentioned your glasses ${me.glasses_count} times!`;
+                    }
+                }
             },
         },
     ],
@@ -169,7 +411,6 @@ function main()
 {
     init_socket()
     start_mode()
-    // summary_mode()
 }
 
 function scroll_to_bottom()
@@ -203,6 +444,17 @@ function init_socket()
     }
 }
 
+function send_message(type)
+{
+    let message =
+    {
+        type: type,
+        data: [arguments[1],arguments[2],arguments[3],arguments[4],arguments[5]]
+    };
+    let message_json = JSON.stringify(message);
+    socket.send(message_json);
+}
+
 function start_mode()
 {
     document.body.innerHTML = "";
@@ -214,6 +466,7 @@ function start_mode()
     `
         <h1>Welcome to Screen Play</h1>
         <hr>
+        <h2>How To Play:</h2>
         <ol>
             <li>
                 You will be given a character profile.<br>It contains the following:
@@ -223,9 +476,19 @@ function start_mode()
                     <li>Goals</li>
                 </ul>
             </li>
-            <li>You will enter a room with other players.</li>
-            <li>Fulfil your goal.</li>
+            <li>You will enter a session with other players.</li>
+            <li>Fulfil your goals.</li>
         </ol>
+        <h2>Notes:</h2>
+        <ul>
+            <li>Read your character profile carefully, and try to embody them.</li>
+            <li>
+                Choices may appear in the form of on-screen buttons.
+                All choices affect all players, so communicate and work together as a team.
+            </li>
+            <li>Screenplays are traditionally written in PRESENT TENSE. Try to stick to this.</li>
+            <li>Have fun!</li>
+        </ul>
         <div class="flex">
             <button id="play_button">Play</button>
             <button id="spectate_button">Spectate</button>
@@ -264,8 +527,9 @@ function script_mode()
     //
 
     socket_handler = (message) => {
-        scenario.filter(message);
         parse_message(message);
+        scenario.filter(message);
+        character.filter(message);
     }
 
     //
@@ -282,7 +546,6 @@ function script_mode()
     script = document.createElement("div");
     script.setAttribute("id", "script");
 
-    let input_area;
     let profile_box;
     if (!spectating)
     {
@@ -305,7 +568,7 @@ function script_mode()
         profile_box.innerHTML =
         `
             <button id="hide_toggle">Hide</button>
-            <h1 class="name">Profile: ${character.name}</h1>
+            <h1>You Are: <span class="underline">${character.name}</span></h1>
             <span id="hidable_area">
                 <p>${character.description}</p>
                 ${goal_text}
@@ -343,23 +606,21 @@ function script_mode()
     // Message handling.
     //
 
-    function send_message(type, x, y)
-    {
-        let message = { type: type, data: [ x, y ] };
-        let message_json = JSON.stringify(message);
-        socket.send(message_json);
-    }
-
     function parse_message(message)
     {
         switch (message.type)
         {
-            case "title":       title(message.data[0]);                            break;
-            case "dialogue":    dialogue(message.data[0], message.data[1]);        break;
-            case "action":      action(message.data[0], message.data[1]);          break;
-            case "scene":       scene(message.data[0], message.data[1] == "true"); break;
-            case "description": description(message.data[0], message.data[1]);     break;
-            default: console.error(`Unknown message type '${message.type}'.`);
+            case "title":       title(message.data[0]);                        break;
+            case "dialogue":    dialogue(message.data[0], message.data[1]);    break;
+            case "action":      action(message.data[0], message.data[1]);      break;
+            case "scene":       scene(message.data[0], message.data[1]);       break;
+            case "description": description(message.data[0], message.data[1]); break;
+            case "disable":
+                {
+                    let e = document.getElementById(message.data[0]);
+                    if (e) e.disabled = true;
+                }
+            break;
         }
     }
 
@@ -460,6 +721,88 @@ function description(text)
     scroll_to_bottom();
 }
 
+function button_prompt(text, send_disable, func)
+{
+    let id = text.replace(/ /g,'') + "_button";
+    script.insertAdjacentHTML("beforeend",
+    `<div class="flex button_prompt">
+        <button id="${id}">${text}</button>
+    </div>`);
+    let button = document.getElementById(id);
+    button.onclick = () =>
+    {
+        func();
+        button.disabled = true;
+        if (send_disable) send_message("disable", id);
+    }
+}
+
+function button_prompt_exclusive_pair(text1,func1,text2,func2)
+{
+    let id1 = text1.replace(/ /g,'') + "_button";
+    let id2 = text2.replace(/ /g,'') + "_button";
+
+    script.insertAdjacentHTML("beforeend",
+    `<div class="flex button_prompt">
+        <button id="${id1}">${text1}</button>
+        <button id="${id2}">${text2}</button>
+    </div>`);
+
+    let button1 = document.getElementById(id1);
+    button1.onclick = () =>
+    {
+        func1();
+        button1.disabled = true;
+        button2.disabled = true;
+        send_message("disable", id1);
+        send_message("disable", id2);
+    }
+
+    let button2 = document.getElementById(id2);
+    button2.onclick = () =>
+    {
+        func2();
+        button1.disabled = true;
+        button2.disabled = true;
+        send_message("disable", id1);
+        send_message("disable", id2);
+    }
+}
+
+function button_prompt_inclusive_pair(text1,func1,text2,func2)
+{
+    let id1 = text1.replace(/ /g,'') + "_button";
+    let id2 = text2.replace(/ /g,'') + "_button";
+
+    script.insertAdjacentHTML("beforeend",
+    `<div class="flex button_prompt">
+        <button id="${id1}">${text1}</button>
+        <button id="${id2}">${text2}</button>
+    </div>`);
+
+    let button1 = document.getElementById(id1);
+    button1.onclick = () =>
+    {
+        func1();
+        button1.disabled = true;
+        send_message("disable", id1);
+    }
+
+    let button2 = document.getElementById(id2);
+    button2.onclick = () =>
+    {
+        func2();
+        button2.disabled = true;
+        send_message("disable", id2);
+    }
+}
+
+function trigger_end()
+{
+    input_area.innerHTML = "";
+    button_prompt("Go to Summary", false, summary_mode);
+}
+
 function summary_mode()
 {
     document.body.innerHTML = "";
@@ -471,7 +814,7 @@ function summary_mode()
     `
         <h1>Summary</h1>
         <hr>
-        <p>The game has ended. Now, let's see if you achieved your goals.</p>
+        <p>The game has ended; thank you so much for playing! Now, let's see how well you did.</p>
     `;
 
     let question_list = document.createElement("ol");
@@ -534,47 +877,67 @@ function summary_mode()
         question_list.appendChild(question_box);
     }
 
-    let submit_button = document.createElement("button");
-    submit_button.setAttribute("class", "submit_button");
-    submit_button.innerHTML = "Submit";
+    // let submit_button = document.createElement("button");
+    // submit_button.setAttribute("class", "submit_button");
+    // submit_button.innerHTML = "Submit";
 
-    submit_button.onclick = (event) =>
-    {
-        for (let query of queries)
-        {
-            inputs = document.querySelectorAll(`[name=\"${query.question}\"]`);
-            let type = inputs[0].getAttribute("type");
-            if (type === "radio")
-            {
-                for (let option of inputs)
-                {
-                    if (option.checked)
-                    {
-                        if (query.answer === option.value)
-                        {
-                            queries.correct = true;
-                            console.log("Correct:", query.question);
-                        }
-                    }
-                }
-            }
-            else if (type === "text")
-            {
-                for (let option of inputs)
-                {
-                    if (option.value === query.answer)
-                    {
-                        queries.correct = true;
-                        console.log("Correct:", query.question);
-                    }
-                }
-            }
-        }
-    };
+    // submit_button.onclick = (event) =>
+    // {
+    //     for (let query of queries)
+    //     {
+    //         inputs = document.querySelectorAll(`[name=\"${query.question}\"]`);
+    //         let type = inputs[0].getAttribute("type");
+    //         if (type === "radio")
+    //         {
+    //             for (let option of inputs)
+    //             {
+    //                 if (option.checked)
+    //                 {
+    //                     if (query.answer === option.value)
+    //                     {
+    //                         queries.correct = true;
+    //                         console.log("Correct:", query.question);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         else if (type === "text")
+    //         {
+    //             for (let option of inputs)
+    //             {
+    //                 if (option.value === query.answer)
+    //                 {
+    //                     queries.correct = true;
+    //                     console.log("Correct:", query.question);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // };
 
     menu.appendChild(question_list);
-    menu.appendChild(submit_button);
+    // menu.appendChild(submit_button);
     document.body.appendChild(menu);
 }
+
+function count_substring(haystack, needle) {
+    var count = 0;
+    var position = 0;
+    while (true)
+    {
+        position = haystack.indexOf(needle, position);
+        if (position != -1)
+        {
+            count++;
+            position += needle.length;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return count;
+};
+
 
 window.onload = main

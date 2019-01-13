@@ -15,7 +15,19 @@ var player_count int = 0
 
 // Maximum number of players allowed. User connected after the max has been
 // reached will only be allowed to spectate the game.
-var player_max int = 8
+var player_max int = 5
+
+var player_slots [5]bool
+
+func find_and_take_free_player_slot() int {
+    for i := 0; i < len(player_slots); i++ {
+        if player_slots[i] == false {
+            player_slots[i] = true
+            return i
+        }
+    }
+    return -1
+}
 
 // Array of all users that have announced themselves to the server.
 var users []*websocket.Conn
@@ -37,6 +49,8 @@ func websocket_handler(writer http.ResponseWriter, request *http.Request) {
         return
     }
 
+    fmt.Printf("New connection: %s\n", c.RemoteAddr());
+
     // Wait for (and respond to) a message from the user declaring whether they
     // want to play or spectate.
     _, message, e := c.ReadMessage()
@@ -45,11 +59,17 @@ func websocket_handler(writer http.ResponseWriter, request *http.Request) {
         return
     }
 
-    if string(message) == "ready" && player_count < player_max {
-        join_message := fmt.Sprintf(`{"type":"join","player_index":%d,"player_max":%d}`,
-            player_count,player_max)
-        c.WriteMessage(websocket.TextMessage, []byte(join_message))
-        player_count++
+    slot := -1
+
+    if string(message) == "ready" {
+        slot = find_and_take_free_player_slot();
+        if slot != -1 {
+            join_message := fmt.Sprintf(`{"type":"join","player_index":%d}`, slot)
+            c.WriteMessage(websocket.TextMessage, []byte(join_message))
+        } else {
+            join_message := fmt.Sprintf(`{"type":"spec"}`)
+            c.WriteMessage(websocket.TextMessage, []byte(join_message))
+        }
     } else {
         join_message := fmt.Sprintf(`{"type":"spec"}`)
         c.WriteMessage(websocket.TextMessage, []byte(join_message))
@@ -60,6 +80,8 @@ func websocket_handler(writer http.ResponseWriter, request *http.Request) {
     users = append(users, c)
     id := len(users) - 1
 
+    fmt.Printf("Player joined [%d]: %d\n", id, slot);
+
     // Handle all incoming messages, echoing them to every connected user.
     for {
         message_type, message, e := c.ReadMessage()
@@ -68,6 +90,9 @@ func websocket_handler(writer http.ResponseWriter, request *http.Request) {
             // Kick out any users that we cannot accept messages from.
             c.Close()
             users[id] = nil
+            if slot != -1 {
+                player_slots[slot] = false
+            }
             return
         }
 

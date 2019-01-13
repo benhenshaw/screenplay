@@ -1,4 +1,4 @@
-body{font-size:12pt;font-family:Courier,monospace;min-width:300px;}
+body{font-size:12pt;line-height:1.4em;font-family:Courier,monospace;min-width:300px;}
 #wrapper{max-width:45em;margin:1em auto 1em auto;}
 #menu{max-width:45em;margin:1em auto 1em auto;padding:1em;}
 .dialogue{max-width:20em;margin:auto;}
@@ -25,3 +25,5 @@ label{margin:0.5em 0.5em;}
 #profile_box{border:1px solid #000;padding:0 1em 0 1em;width:70%;margin:auto;}
 #hide_toggle{float:right;margin-top:0.4em;}
 .goal{font-weight:800;}
+.underline{text-decoration:underline;}
+.button_prompt{margin: 1em;}
