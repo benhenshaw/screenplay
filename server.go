@@ -6,6 +6,7 @@ package main
 import (
     "flag"
     "fmt"
+    "log"
     "github.com/gorilla/websocket"
     "net/http"
 )
@@ -134,25 +135,18 @@ func main() {
 
     // If we have the credentials for TLS, use HTTPS. Otherwise, use HTTP.
     if *cert != "" && *key != "" {
-        e := http.ListenAndServeTLS(":443", *cert, *key, nil)
-        if e != nil {
-            fmt.Printf("HTTPS Server Error: %s\n", e)
-            return
-        }
+        log.Fatal(http.ListenAndServeTLS(":443", *cert, *key, nil))
+        fmt.Printf("Launched HTTPS Server on port 80.\n");
         // Redirect HTTP requests to HTTPS.
         redirector := http.HandlerFunc(func(writer http.ResponseWriter, request * http.Request) {
             http.Redirect(writer, request,
                 "https://"+request.Host+request.RequestURI,
                 http.StatusMovedPermanently)
         })
-        e = http.ListenAndServe(":80", redirector)
-        if e != nil {
-            fmt.Printf("Redirect Server Error: %s\n", e)
-        }
+        log.Fatal(http.ListenAndServe(":80", redirector))
+        fmt.Printf("Launched HTTP -> HTTPS Redirector on port 80.\n");
     } else {
-        e := http.ListenAndServe(":80", nil)
-        if e != nil {
-            fmt.Printf("HTTP Server Error: %s\n", e)
-        }
+        log.Fatal(http.ListenAndServe(":80", nil))
+        fmt.Printf("Launched HTTP Server on port 80.\n");
     }
 }
