@@ -26,7 +26,7 @@ let scenario =
         scene("Dirt Road in Dead Forest", false);
         description("The Mystery Mobile is seen driving along a dark and dusty road, surrounded by dead trees, "+
                     " moonlight illuminating the path. Here and there small glowing eyes peer at the gang "+
-                    "as they drive by, and bats can be seen flying in the distance sky.");
+                    "as they drive by, and bats can be seen flying in the distant sky.");
         dialogue("Narrator", "Only days after successfully capturing the Ghastly Ghost of Ghoul Manor, "+
                              "Scoob and the gang are at it again. But will they pull it off this time?");
         description("The gang are on the search for treasure. They caught word that long ago some "+
@@ -45,7 +45,7 @@ let scenario =
                 "of gold, or mysterious clues. They reach an old room with some oak furniture, including a writing "+
                 "desk, at which a SKELETON sits. A faintly GLOWING BOX rest upon the desk, covered in dust.");
             send_message("description", "It is very dark here, and the gang will certainly be lost forever if "+
-                "their flash-light went out. It has THREE MINUTES of charge left.");
+                "their flash-light went out. It has SEVEN MINUTES of charge left.");
             send_message("flashlight");
             send_message("inside_mine", character.short_name);
         })
@@ -57,7 +57,7 @@ let scenario =
         {
             if (scenario.near_box && message.data[1].toLowerCase().includes("gimme the gold"))
             {
-                description("The GLOWING BOX starts clicking, and the humming grows louder. "+
+                description("Upon hearing the words \"gimme the gold\", The GLOWING BOX starts clicking, and the humming grows louder. "+
                             "After a few moments it is almost too much to bare.");
                 description("The whole gang crowd around the box as it starts to open. The top splits in "+
                     "two, each piece falling to the side, revealing a pile of glistening GOLD NUGGETS.");
@@ -102,10 +102,14 @@ let scenario =
         }
         else if (message.type === "flashlight")
         {
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TWO MINUTES of charge left.")},    60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has ONE MINUTE of charge left.")},     120000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THIRTY SECONDS of charge left.")}, 150000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TEN SECONDS of charge left.")},    170000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has SIX MINUTES of charge left.")},     1 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has FIVE MINUTES of charge left.")},    2 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has FOUR MINUTES of charge left.")},    3 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THREE MINUTES of charge left.")},   4 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TWO MINUTES of charge left.")},     5 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has ONE MINUTE of charge left.")},      6 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THIRTY SECONDS of charge left.")},  7 * 60000 - 30000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TEN SECONDS of charge left.")},     7 * 60000 - 10000);
             window.setTimeout(() =>
             {
                 if (!scenario.stop_countdown)
@@ -113,7 +117,7 @@ let scenario =
                     description("The flash-light has run out of charge. The gang are plunged into darkness, never to be seen again.");
                     trigger_end();
                 }
-            }, 180000);
+            }, 7 * 60000);
         }
         else if (message.type === "inside_mine")
         {
@@ -129,7 +133,7 @@ let scenario =
                 "Examine GLOWING BOX", () =>
                 {
                     send_message("description",
-                        `${character.short_name} brushes dusk off the GLOWING BOX and takes a better look. `+
+                        `${character.short_name} brushes dust off the GLOWING BOX and takes a better look. `+
                         "It is small enough to hold in your hands. If listened to carefully "+
                         "one can hear faint humming; an old miner's song.");
                 }
@@ -266,7 +270,7 @@ let scenario =
                     {
                         if (!me.catchphrase_count) me.catchphrase_count = 0;
                         me.catchphrase_count++
-                        me.questions[1].text = `You said \"Looks like we've got another mystery on our hands.\" ${me.catchphrase_count} times!`;
+                        me.questions[2].text = `You said \"Looks like we've got another mystery on our hands.\" ${me.catchphrase_count} times!`;
                     }
                 }
             },
@@ -302,7 +306,7 @@ let scenario =
                     {
                         if (!me.catchphrase_count) me.catchphrase_count = 0;
                         me.catchphrase_count++
-                        me.questions[1].text = `You said \"Ruh roh Raggy!\" ${me.catchphrase_count} times!`;
+                        me.questions[2].text = `You said \"Ruh roh Raggy!\" ${me.catchphrase_count} times!`;
                     }
                 }
             },
@@ -341,14 +345,14 @@ let scenario =
                     {
                         if (!me.catchphrase_count) me.catchphrase_count = 0;
                         me.catchphrase_count++
-                        me.questions[1].text = `You said \"Zoinks!\" ${me.catchphrase_count} times!`;
+                        me.questions[2].text = `You said \"Zoinks!\" ${me.catchphrase_count} times!`;
                     }
                     if (message.data[1].toLowerCase().includes("like"))
                     {
                         let like_count = count_substring(message.data[1].toLowerCase(), "like")
                         if (like_count > 1)
                         {
-                            me.questions[2].text = `You said \"like\" ${like_count} times in one sentence!`;
+                            me.questions[3].text = `You said \"like\" ${like_count} times in one sentence!`;
                         }
                     }
                 }
@@ -387,13 +391,13 @@ let scenario =
                     {
                         if (!me.catchphrase_count) me.catchphrase_count = 0;
                         me.catchphrase_count++
-                        me.questions[1].text = `You said \"Jinkies!\" ${me.catchphrase_count} times!`;
+                        me.questions[2].text = `You said \"Jinkies!\" ${me.catchphrase_count} times!`;
                     }
                     if (message.data[1].toLowerCase().includes("glasses"))
                     {
                         if (!me.glasses_count) me.glasses_count = 0;
                         me.glasses_count += count_substring(message.data[1].toLowerCase(), "glasses");
-                        me.questions[2].text = `You mentioned your glasses ${me.glasses_count} times!`;
+                        me.questions[3].text = `You mentioned your glasses ${me.glasses_count} times!`;
                     }
                 }
             },
