@@ -77,7 +77,7 @@ let scenario =
                         send_message("description",
                             `${character.short_name} decideds to lead the gang down the DARK STAIRCASE.`);
                         send_message("scene", "Stone Staircase", true);
-                        send_message("description", "Stone steps echo every footstep as the gang descend deeper into the cavernous mine."+
+                        send_message("description", "Stone steps echo every footstep as the gang descend deeper into the cavernous mine. "+
                             "The flash-light flickers, as a distant voice is heard.");
                         send_message("dialogue", "Disembodied Voice", "Begone thieves! If you stray any closer to my dwelling "+
                             "I shall have to take your lives.");

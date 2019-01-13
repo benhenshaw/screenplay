@@ -1,4 +1,4 @@
-body{font-size:12pt;line-height:1.4em;font-family:Courier,monospace;min-width:300px;}
+body{margin:0;font-size:12pt;line-height:1.4em;font-family:Courier,monospace;min-width:300px;}
 #wrapper{max-width:45em;margin:1em auto 1em auto;}
 #menu{max-width:45em;margin:1em auto 1em auto;padding:1em;}
 .dialogue{max-width:20em;margin:auto;}
@@ -12,7 +12,7 @@ h1{text-align:center;font-size:1em;text-transform:uppercase;}
 h2{font-size:1em;text-transform:uppercase;}
 input[type=text]{font-family:inherit;font-size:inherit;}
 input#entry{display:block;width:95%;height:1.25em;margin:0.5em auto;padding:0 0.2em 0 0.2em;border:1px solid #000;}
-button{cursor:pointer;background-color:#fff;min-width:3em;min-height:1.25em;margin:0 0.5em;padding:0.2em 0.5em;border:1px solid #000;font-family:inherit;font-size:inherit;}
+button{cursor:pointer;background-color:#fff;min-width:3em;min-height:1.25em;margin:0.5em;padding:0.2em 0.5em;border:1px solid #000;font-family:inherit;font-size:inherit;}
 button:hover{background-color:#eee;box-shadow:0.1em 0.1em #000;}
 button:active{background-color:#eee;box-shadow:0 0 #000;}
 button:disabled{cursor:initial;background-color:#000;color:#fff;box-shadow:0 0 #000;}
