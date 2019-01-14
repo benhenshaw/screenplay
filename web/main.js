@@ -45,7 +45,7 @@ let scenario =
                 "of gold, or mysterious clues. They reach an old room with some oak furniture, including a writing "+
                 "desk, at which a SKELETON sits. A faintly GLOWING BOX rest upon the desk, covered in dust.");
             send_message("description", "It is very dark here, and the gang will certainly be lost forever if "+
-                "their flash-light went out. It has SEVEN MINUTES of charge left.");
+                "their flash-light went out. It has FIVE MINUTES of charge left.");
             send_message("flashlight");
             send_message("inside_mine", character.short_name);
         })
@@ -55,9 +55,9 @@ let scenario =
     {
         if (message.type === "dialogue")
         {
-            if (scenario.near_box && message.data[1].toLowerCase().includes("gimme the gold"))
+            if (scenario.near_box && message.data[1].toLowerCase().includes("open sesame"))
             {
-                description("Upon hearing the words \"gimme the gold\", The GLOWING BOX starts clicking, and the humming grows louder. "+
+                description("Upon hearing the words \"open sesame\", The GLOWING BOX starts clicking, and the humming grows louder. "+
                             "After a few moments it is almost too much to bare.");
                 description("The whole gang crowd around the box as it starts to open. The top splits in "+
                     "two, each piece falling to the side, revealing a pile of glistening GOLD NUGGETS.");
@@ -80,7 +80,7 @@ let scenario =
                         send_message("description", "Stone steps echo every footstep as the gang descend deeper into the cavernous mine. "+
                             "The flash-light flickers, as a distant voice is heard.");
                         send_message("dialogue", "Disembodied Voice", "Begone thieves! If you stray any closer to my dwelling "+
-                            "I shall have to take your lives.");
+                            "you'll be in big trouble.");
                         send_message("staircase");
                     },
                     "Leave the GOLD MINE", () =>
@@ -99,17 +99,19 @@ let scenario =
                     }
                 );
             }
+            if (scenario.waiting_for_dialogue && message.data[0] != "Mysterious Voice")
+            {
+                send_message("description", "The yellow eyes disappear, and the gang are left in silence.");
+            }
         }
         else if (message.type === "flashlight")
         {
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has SIX MINUTES of charge left.")},     1 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has FIVE MINUTES of charge left.")},    2 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has FOUR MINUTES of charge left.")},    3 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THREE MINUTES of charge left.")},   4 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TWO MINUTES of charge left.")},     5 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has ONE MINUTE of charge left.")},      6 * 60000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THIRTY SECONDS of charge left.")},  7 * 60000 - 30000);
-            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TEN SECONDS of charge left.")},     7 * 60000 - 10000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has FOUR MINUTES of charge left.")},    1 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THREE MINUTES of charge left.")},   2 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TWO MINUTES of charge left.")},     3 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has ONE MINUTE of charge left.")},      4 * 60000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has THIRTY SECONDS of charge left.")},  5 * 60000 - 30000);
+            window.setTimeout(() => {if (!scenario.stop_countdown) description("The flash-light has TEN SECONDS of charge left.")},     5 * 60000 - 10000);
             window.setTimeout(() =>
             {
                 if (!scenario.stop_countdown)
@@ -117,7 +119,7 @@ let scenario =
                     description("The flash-light has run out of charge. The gang are plunged into darkness, never to be seen again.");
                     trigger_end();
                 }
-            }, 7 * 60000);
+            }, 5 * 60000);
         }
         else if (message.type === "inside_mine")
         {
@@ -128,14 +130,14 @@ let scenario =
                     send_message("description", `The skeleton crumbles into dust the moment ${character.short_name} touches it.`);
                     send_message("description", "Among the dust a small note can be found. It has a poem of some sort, though "+
                         "almost all of it has faded away. The last few words can be read clearly, which are:");
-                    send_message("description", "\"... gimme the gold.\"");
+                    send_message("description", "\"... open sesame.\"");
                 },
                 "Examine GLOWING BOX", () =>
                 {
                     send_message("description",
                         `${character.short_name} brushes dust off the GLOWING BOX and takes a better look. `+
                         "It is small enough to hold in your hands. If listened to carefully "+
-                        "one can hear faint humming; an old miner's song.");
+                        "one can hear faint humming; an old miner's song. If we knew");
                 }
             );
         }
@@ -176,8 +178,26 @@ let scenario =
                             send_message("description", "Faint scratching sounds are heard.");
                         }
                     }, 30000);
+                    window.setTimeout(() =>
+                    {
+                        if (!scenario.reached_end)
+                        {
+                            send_message("description", "Finally, the staircase starts to straighten out. It grows narrow, "+
+                                "so much so that the gang have to walk in single file. At the end of the narrow pass there is "+
+                                "a small wooden door. The gang open the door and enter one by one, crouching down under the "+
+                                "low frame.");
+                            send_message("scene", "Goblin's Lair", true);
+                            send_message("description", "The gang are crouched in a wide dirt CAVE with a very low ceiling. "+
+                                "The far walls are not visible in the darkness. Distant scratching and shuffling sounds can "+
+                                "be heard.");
+                            send_message("description", "Suddenly, two glowing yellow eyes appear in the distance. The gang "+
+                                "freeze in terror.");
+                            send_message("dialogue", "Mysterious Voice", "Who trespasses upon my domain?");
+                            scenario.waiting_for_dialogue = true;
+                        }
+                    }, 45000);
                 },
-                "Leave the GOLD MINE", () =>
+                "Turn back", () =>
                 {
                     send_message("left_mine");
                     send_message("description",
@@ -760,7 +780,7 @@ function button_prompt_exclusive_pair(text1,func1,text2,func2)
         button2.disabled = true;
         send_message("disable", id1);
         send_message("disable", id2);
-    }
+    };
 
     let button2 = document.getElementById(id2);
     button2.onclick = () =>
@@ -770,7 +790,7 @@ function button_prompt_exclusive_pair(text1,func1,text2,func2)
         button2.disabled = true;
         send_message("disable", id1);
         send_message("disable", id2);
-    }
+    };
 }
 
 function button_prompt_inclusive_pair(text1,func1,text2,func2)
@@ -790,7 +810,7 @@ function button_prompt_inclusive_pair(text1,func1,text2,func2)
         func1();
         button1.disabled = true;
         send_message("disable", id1);
-    }
+    };
 
     let button2 = document.getElementById(id2);
     button2.onclick = () =>
@@ -798,7 +818,7 @@ function button_prompt_inclusive_pair(text1,func1,text2,func2)
         func2();
         button2.disabled = true;
         send_message("disable", id2);
-    }
+    };
 }
 
 function trigger_end()
